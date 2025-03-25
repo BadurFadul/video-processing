@@ -1,0 +1,9 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "video-processing"
+resolve_s3 = true
+s3_prefix = "video-processing"
+region = "eu-north-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Samples=\"4\" SampleDuration=\"2\" Format=\"mp4\""
+image_repositories = []

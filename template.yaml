@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Video processing application that creates preview clips from uploaded videos
+
+Parameters:
+  Samples:
+    Type: Number
+    Default: 4
+    Description: Number of samples to take from the video
+  
+  SampleDuration:
+    Type: Number
+    Default: 2
+    Description: Duration of each sample in seconds
+  
+  Format:
+    Type: String
+    Default: mp4
+    Description: Output video format
+
+Resources:
+  VideoProcessingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: video_processing
+      Architectures: [x86_64]
+      CodeUri: ./
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Timeout: 300  # Increased timeout for video processing
+      MemorySize: 1024  # Increased memory for video processing
+      LoggingConfig:
+        LogFormat: JSON
+      Environment:
+        Variables:
+          samples: !Ref Samples
+          sample_duration: !Ref SampleDuration
+          format: !Ref Format
+          s3_output_prefix: "previews"
+          debug: "false"
+          output_bucket: !Ref VideoOutputBucket
+      Policies:
+        - AmazonS3FullAccess
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref VideoSourceBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .mp4
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:175033217214:layer:ffmpeg:1"
+
+  VideoSourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "video-processing-input-${AWS::AccountId}-${AWS::Region}"
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ['*']
+
+  VideoOutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "video-processing-output-${AWS::AccountId}-${AWS::Region}"
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ['*']
+
+Outputs:
+  VideoProcessingFunction:
+    Description: "Video Processing Lambda Function ARN"
+    Value: !GetAtt VideoProcessingFunction.Arn
+  
+  VideoSourceBucket:
+    Description: "S3 bucket for uploading source videos"
+    Value: !Ref VideoSourceBucket
+  
+  VideoOutputBucket:
+    Description: "S3 bucket for processed video previews"
+    Value: !Ref VideoOutputBucket

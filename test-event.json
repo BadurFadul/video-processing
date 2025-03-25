@@ -1,0 +1,14 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "video-processing-input-677275605958-eu-north-1"
+        },
+        "object": {
+          "key": "test-video.mp4"
+        }
+      }
+    }
+  ]
+}
